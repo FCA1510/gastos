@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Gastos">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Gastos</title>
+<style>
+  :root {
+    --bg: #f4f6f8; --card: #ffffff; --text: #1a1f24; --muted: #66707a; --line: #dde2e7;
+    --accent: #0f766e; --accent-soft: #e3f3f1; --on-accent: #ffffff; --danger: #b42318;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #111417; --card: #1b2025; --text: #eef1f4; --muted: #9aa4ae; --line: #2c333a;
+            --accent: #2dd4bf; --accent-soft: #123532; --on-accent: #062320; --danger: #f97066; }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 480px; margin: 0 auto;
+         padding: calc(16px + env(safe-area-inset-top)) 16px calc(40px + env(safe-area-inset-bottom)); }
+  header { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  h1 { font-size: 22px; margin: 0; flex: 1; }
+  select, input { font: inherit; color: inherit; background: var(--card); border: 1px solid var(--line);
+                  border-radius: 12px; padding: 12px 14px; width: 100%; }
+  select:focus, input:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
+  header select { width: auto; padding: 8px 12px; font-weight: 600; }
+  .icon-btn { font: inherit; font-size: 20px; width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line);
+              background: var(--card); color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; margin-bottom: 14px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 14px 0 6px; font-weight: 600; }
+  label:first-child { margin-top: 0; }
+  .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .seg button { font: inherit; font-size: 14px; padding: 10px 4px; border-radius: 10px; border: 1px solid var(--line);
+                background: var(--card); color: var(--text); }
+  .seg button.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  .importe { font-size: 28px; font-weight: 700; padding: 10px 14px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .chips button { font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line);
+                  background: transparent; color: var(--muted); }
+  .primary, .secondary { width: 100%; margin-top: 18px; padding: 15px; font: inherit; font-weight: 700; font-size: 17px;
+                         border-radius: 12px; }
+  .primary { border: 0; background: var(--accent); color: var(--on-accent); }
+  .secondary { border: 1px solid var(--line); background: transparent; color: var(--text); font-size: 15px; padding: 12px; margin-top: 10px; }
+  .primary:disabled { opacity: .5; }
+  .hidden { display: none !important; }
+  .list-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .list-head h2 { font-size: 15px; margin: 0; }
+  .list-head span { color: var(--muted); font-size: 14px; }
+  ul { list-style: none; margin: 0; padding: 0; }
+  li { display: flex; gap: 10px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line); font-size: 15px; }
+  li small { color: var(--muted); margin-left: 6px; }
+  li .monto { font-variant-numeric: tabular-nums; white-space: nowrap; margin-left: auto; }
+  li .borrar { flex: none; width: 32px; height: 32px; margin: -5px -6px -5px 0; border: 0; border-radius: 8px;
+               background: none; color: var(--muted); font-size: 18px; line-height: 1; }
+  li .borrar:active { background: var(--line); color: var(--danger); }
+  .empty { color: var(--muted); font-size: 14px; }
+  p.help { color: var(--muted); font-size: 14px; margin: 0 0 4px; }
+  #qr { display: flex; justify-content: center; margin-top: 14px; }
+  #qr svg { width: 220px; height: 220px; background: #fff; border-radius: 12px; }
+  .toast { position: fixed; left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); max-width: 448px; margin: 0 auto;
+           background: var(--text); color: var(--bg); border-radius: 12px; padding: 12px 14px;
+           display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 15px;
+           transform: translateY(200%); transition: transform .2s; }
+  .toast.show { transform: none; }
+  .toast.error { background: var(--danger); color: #fff; }
+  .toast button { font: inherit; font-weight: 700; background: none; border: 0; color: inherit; text-decoration: underline; }
+</style>
+</head>
+<body>
+<main>
+  <!-- Pantalla principal -->
+  <div id="app" class="hidden">
+    <header>
+      <h1>Cargar gasto</h1>
+      <select id="mes" aria-label="Mes"></select>
+      <button class="icon-btn" id="abrirAjustes" type="button" aria-label="Ajustes">⚙</button>
+    </header>
+
+    <form class="card" id="form" autocomplete="off">
+      <label>Tipo</label>
+      <div class="seg" id="secciones"></div>
+
+      <label for="importe">Importe ($)</label>
+      <input id="importe" class="importe" inputmode="decimal" placeholder="0" required>
+
+      <label for="concepto">Concepto</label>
+      <input id="concepto" list="sugerencias" placeholder="Ej: Nafta, Mercado…" required>
+      <datalist id="sugerencias"></datalist>
+
+      <div id="cuotasBox">
+        <label for="cuotas">Cuotas (opcional)</label>
+        <input id="cuotas" inputmode="numeric" placeholder="Ej: 1/3">
+        <div class="chips" id="chips"></div>
+      </div>
+
+      <button class="primary" id="guardar" type="submit" disabled>Cargando…</button>
+    </form>
+
+    <section class="card">
+      <div class="list-head"><h2 id="listTitle">Cargado este mes</h2><span id="total"></span></div>
+      <ul id="lista"><li class="empty">—</li></ul>
+    </section>
+  </div>
+
+  <!-- Configuración (primera vez y desde ⚙) -->
+  <div id="ajustes" class="hidden">
+    <header>
+      <h1>Configurar</h1>
+      <button class="icon-btn hidden" id="cerrarAjustes" type="button" aria-label="Cerrar">✕</button>
+    </header>
+    <form class="card" id="formAjustes" autocomplete="off">
+      <p class="help">Pegá el link de configuración, o la URL de la API (termina en <b>/exec</b>) y la clave.</p>
+      <label for="api">Link de configuración o URL de la API</label>
+      <input id="api" type="url" inputmode="url" placeholder="https://script.google.com/macros/s/…/exec" required>
+      <label for="clave">Clave</label>
+      <input id="clave" placeholder="La que te dio generarClave()">
+      <button class="primary" type="submit">Guardar y conectar</button>
+    </form>
+    <section class="card hidden" id="otroDispositivo">
+      <div class="list-head"><h2>Configurar el celular</h2></div>
+      <p class="help">Escaneá este código con la cámara del celular, o mandate el link por WhatsApp.</p>
+      <div id="qr"></div>
+      <button class="secondary" id="copiarLink" type="button">Copiar link de configuración</button>
+    </section>
+  </div>
+</main>
+<div class="toast" id="toast"><span id="toastMsg"></span><button id="undo" type="button">Deshacer</button></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const STORE = 'gastos.cfg';
+let conexion = null, cfg, seccion = 'compartida', ultimo = null, toastTimer;
+
+// ---------- Conexión con la API (Apps Script) ----------
+
+function leerConexion() {
+  try { return JSON.parse(localStorage.getItem(STORE)) || null; } catch { return null; }
+}
+function guardarConexion(c) {
+  try { localStorage.setItem(STORE, JSON.stringify(c)); } catch { /* sin storage: queda solo en memoria */ }
+  conexion = c;
+}
+function parseLink(s) {
+  const i = String(s).indexOf('#');
+  if (i < 0) return null;
+  const p = new URLSearchParams(String(s).slice(i + 1));
+  return p.get('api') && p.get('k') ? { api: p.get('api'), k: p.get('k') } : null;
+}
+function linkConfiguracion() {
+  return `${location.origin}${location.pathname}#api=${encodeURIComponent(conexion.api)}&k=${encodeURIComponent(conexion.k)}`;
+}
+
+async function call(accion, datos = {}) {
+  if (conexion.api === 'demo') return demo(accion, datos);
+  const r = await fetch(conexion.api, {
+    method: 'POST',
+    // text/plain evita el preflight CORS, que Apps Script no soporta.
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ k: conexion.k, accion, ...datos }),
+  });
+  let res;
+  try { res = await r.json(); } catch { throw new Error('La API no respondió bien. ¿Está publicada con acceso "Cualquier persona"?'); }
+  if (!res.ok) throw new Error(res.error);
+  return res.data;
+}
+
+// Modo demo (link con api=demo): datos de ejemplo, no toca la planilla.
+const demoDb = { 'Nov 2026|compartida': [{ fila: 10, concepto: 'Nafta', importe: 58011.75, cuotas: '' }] };
+function demo(accion, d) {
+  return new Promise(res => setTimeout(() => {
+    if (accion === 'config') return res({ meses: ['Nov 2026', 'Dic 2026', 'Ene 2027'], sugerido: 'Nov 2026',
+      secciones: [{ id: 'efectivo', nombre: 'Efectivo variable', cuotas: false }, { id: 'compartida', nombre: 'Tarjeta compartida', cuotas: true }, { id: 'fede', nombre: 'Tarjeta Fede', cuotas: true }],
+      conceptos: { efectivo: ['Kiosco'], compartida: ['Mercado', 'Nafta'], fede: ['Rex'] } });
+    if (accion === 'agregar') { const g = d.gasto, l = (demoDb[g.mes + '|' + g.seccion] ||= []); const r = { hoja: g.mes, fila: 10 + l.length, ...g }; l.push(r); return res(r); }
+    if (accion === 'borrar') { const k = d.gasto.hoja + '|' + d.gasto.seccion; demoDb[k] = (demoDb[k] || []).filter(i => i.fila !== d.gasto.fila); return res(true); }
+    const it = [...(demoDb[d.mes + '|' + d.seccion] || [])].reverse();
+    res({ items: it, total: it.reduce((a, b) => a + Number(b.importe), 0) });
+  }, 200));
+}
+
+// ---------- Utilidades ----------
+
+const fmt = n => { const d = Number.isInteger(Number(n)) ? 0 : 2; return '$ ' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: d, maximumFractionDigits: d }); };
+const escapeHtml = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// Acepta "58.011,75", "58011.75", "58011,75" o "58000".
+function parseImporte(s) {
+  s = String(s).replace(/[$\s]/g, '');
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+  return Number(s);
+}
+
+function toast(msg, { error = false, undo = false } = {}) {
+  $('toastMsg').textContent = msg;
+  $('toast').classList.toggle('error', error);
+  $('undo').classList.toggle('hidden', !undo);
+  $('toast').classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => $('toast').classList.remove('show'), undo ? 7000 : error ? 6000 : 3500);
+}
+
+// ---------- Pantalla principal ----------
+
+function pintarSecciones() {
+  $('secciones').innerHTML = '';
+  cfg.secciones.forEach(s => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = s.nombre.replace('Tarjeta ', 'Tarj. ');
+    b.className = s.id === seccion ? 'on' : '';
+    b.onclick = () => { seccion = s.id; pintarSecciones(); refrescar(); };
+    $('secciones').appendChild(b);
+  });
+  const sec = cfg.secciones.find(s => s.id === seccion);
+  $('cuotasBox').classList.toggle('hidden', !sec.cuotas);
+  $('sugerencias').innerHTML = (cfg.conceptos[seccion] || []).map(c => `<option value="${escapeHtml(c)}">`).join('');
+}
+
+async function refrescar() {
+  $('listTitle').textContent = cfg.secciones.find(s => s.id === seccion).nombre + ' · ' + $('mes').value;
+  const r = await call('listar', { mes: $('mes').value, seccion });
+  $('total').textContent = 'Total ' + fmt(r.total);
+  $('lista').innerHTML = '';
+  if (!r.items.length) { $('lista').innerHTML = '<li class="empty">Todavía no hay gastos cargados.</li>'; return; }
+  r.items.forEach(i => {
+    const li = document.createElement('li');
+    li.innerHTML = `<span>${escapeHtml(i.concepto)}${i.cuotas ? `<small>${escapeHtml(i.cuotas)}</small>` : ''}</span><span class="monto">${fmt(i.importe)}</span>`
+      + '<button class="borrar" type="button" aria-label="Borrar">🗑</button>';
+    li.querySelector('.borrar').onclick = () => borrar({ hoja: $('mes').value, seccion, fila: i.fila, concepto: i.concepto, importe: i.importe });
+    $('lista').appendChild(li);
+  });
+}
+
+async function borrar(g) {
+  if (!confirm(`¿Borrar "${g.concepto}" ${fmt(g.importe)} de ${g.hoja}?`)) return;
+  try { await call('borrar', { gasto: g }); toast('Gasto borrado'); refrescar(); }
+  catch (err) { toast(err.message, { error: true }); }
+}
+
+$('form').onsubmit = async e => {
+  e.preventDefault();
+  const importe = parseImporte($('importe').value);
+  if (!(importe > 0)) return toast('Revisá el importe', { error: true });
+  const gasto = { mes: $('mes').value, seccion, concepto: $('concepto').value, importe, cuotas: $('cuotas').value };
+  $('guardar').disabled = true; $('guardar').textContent = 'Guardando…';
+  try {
+    ultimo = await call('agregar', { gasto });
+    toast(`✓ ${ultimo.concepto} ${fmt(ultimo.importe)} → ${ultimo.hoja}`, { undo: true });
+    const lista = cfg.conceptos[seccion];
+    if (!lista.includes(ultimo.concepto)) lista.push(ultimo.concepto);
+    $('importe').value = ''; $('concepto').value = ''; $('cuotas').value = '';
+    pintarSecciones(); refrescar();
+  } catch (err) {
+    toast(err.message || 'Error al guardar', { error: true });
+  } finally {
+    $('guardar').disabled = false; $('guardar').textContent = 'Guardar gasto';
+  }
+};
+
+$('undo').onclick = async () => {
+  if (!ultimo) return;
+  try { await call('borrar', { gasto: ultimo }); ultimo = null; toast('Gasto borrado'); refrescar(); }
+  catch (err) { toast(err.message, { error: true }); }
+};
+
+$('mes').onchange = () => refrescar();
+
+['1/3', '1/6', '1/12'].forEach(c => {
+  const b = document.createElement('button'); b.type = 'button'; b.textContent = c;
+  b.onclick = () => { $('cuotas').value = c; };
+  $('chips').appendChild(b);
+});
+
+async function iniciarApp() {
+  $('ajustes').classList.add('hidden');
+  $('app').classList.remove('hidden');
+  $('guardar').disabled = true; $('guardar').textContent = 'Cargando…';
+  try {
+    cfg = await call('config');
+    $('mes').innerHTML = cfg.meses.map(m => `<option${m === cfg.sugerido ? ' selected' : ''}>${escapeHtml(m)}</option>`).join('');
+    pintarSecciones(); await refrescar();
+    $('guardar').disabled = false; $('guardar').textContent = 'Guardar gasto';
+  } catch (err) {
+    toast('No se pudo conectar: ' + err.message, { error: true });
+    $('guardar').textContent = 'Sin conexión';
+  }
+}
+
+// ---------- Ajustes ----------
+
+function mostrarAjustes() {
+  $('app').classList.add('hidden');
+  $('ajustes').classList.remove('hidden');
+  $('cerrarAjustes').classList.toggle('hidden', !conexion);
+  $('otroDispositivo').classList.toggle('hidden', !conexion);
+  if (conexion) { $('api').value = conexion.api; $('clave').value = conexion.k; dibujarQR(); }
+}
+
+function dibujarQR() {
+  const pintar = () => { const q = qrcode(0, 'M'); q.addData(linkConfiguracion()); q.make(); $('qr').innerHTML = q.createSvgTag({ cellSize: 4, margin: 3 }); };
+  if (window.qrcode) return pintar();
+  const s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';
+  s.onload = pintar; s.onerror = () => { $('qr').textContent = 'No se pudo generar el QR; usá "Copiar link".'; };
+  document.head.appendChild(s);
+}
+
+$('formAjustes').onsubmit = e => {
+  e.preventDefault();
+  const desdeLink = parseLink($('api').value);
+  const c = desdeLink || { api: $('api').value.trim(), k: $('clave').value.trim() };
+  if (c.api !== 'demo' && !/^https:\/\/script\.google\.com\/.+\/exec$/.test(c.api)) return toast('La URL tiene que terminar en /exec', { error: true });
+  if (!c.k) return toast('Falta la clave', { error: true });
+  guardarConexion(c);
+  iniciarApp();
+};
+
+$('abrirAjustes').onclick = mostrarAjustes;
+$('cerrarAjustes').onclick = iniciarApp;
+$('copiarLink').onclick = async () => {
+  try { await navigator.clipboard.writeText(linkConfiguracion()); toast('Link copiado'); }
+  catch { prompt('Copiá este link:', linkConfiguracion()); }
+};
+
+// ---------- Arranque ----------
+
+function arrancar() {
+  const desdeHash = parseLink(location.href);
+  if (desdeHash) {
+    guardarConexion(desdeHash);
+    history.replaceState(null, '', location.pathname); // saca la clave de la barra de direcciones
+  }
+  conexion = conexion || leerConexion();
+  conexion ? iniciarApp() : mostrarAjustes();
+}
+arrancar();
+// Si abren el link de configuración con la app ya abierta, solo cambia el hash.
+window.addEventListener('hashchange', () => { if (parseLink(location.href)) arrancar(); });
+
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>
